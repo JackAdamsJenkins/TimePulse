@@ -129,7 +129,11 @@ pub fn run() {
         })
         .icon(app.default_window_icon().unwrap().clone())
         .build(app)?;
-      let _ = main_window.hide();
+      if std::env::args().any(|arg| arg == "--minimized") {
+        let _ = main_window.hide();
+      } else {
+        let _ = main_window.show();
+      }
 
       if let Some(window) = app.get_webview_window("main") {
         let window_for_events = window.clone();
