@@ -7,9 +7,10 @@ import './responsive.css'
 type Activity = { id: number; start_time: string; end_time: string; description: string; productivity: string }
 type Page = 'Vue d’ensemble' | 'Historique' | 'Statistiques' | 'Projets' | 'Paramètres'
 const pages: Page[] = ['Vue d’ensemble', 'Historique', 'Statistiques', 'Projets', 'Paramètres']
+function initialName() { if (localStorage.getItem('timepulse-profile-version') !== '0.2.1') { localStorage.removeItem('timepulse-name'); localStorage.setItem('timepulse-profile-version', '0.2.1') } return localStorage.getItem('timepulse-name') || '' }
 
 export default function App() {
-  const [name, setName] = useState(() => localStorage.getItem('timepulse-name') || '')
+  const [name, setName] = useState(initialName)
   const [nameDraft, setNameDraft] = useState('')
   const [page, setPage] = useState<Page>('Vue d’ensemble')
   const [activities, setActivities] = useState<Activity[]>([])
