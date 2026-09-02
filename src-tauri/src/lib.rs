@@ -25,6 +25,17 @@ fn productivity_totals(app: tauri::AppHandle) -> Result<Vec<ProductivityTotal>, 
 }
 
 #[tauri::command]
+fn productivity_totals_for_period(app: tauri::AppHandle, period: String) -> Result<Vec<ProductivityTotal>, String> {
+  use rusqlite::Connection;
+  let db = Connection::open(app.path().app_data_dir().map_err(|e| e.to_string())?.join("timepulse.sqlite")).map_err(|e| e.to_string())?;
+  let modifier = match period.as_str() { "week" => "-6 days", "month" => "-1 month", _ => "0 days" };
+  let sql = format!("SELECT productivity, COUNT(*) FROM activities WHERE start_time >= datetime('now', '{modifier}') GROUP BY productivity");
+  let mut query = db.prepare(&sql).map_err(|e| e.to_string())?;
+  let rows = query.query_map([], |row| Ok(ProductivityTotal { productivity: row.get(0)?, count: row.get(1)? })).map_err(|e| e.to_string())?;
+  rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn list_activities(app: tauri::AppHandle) -> Result<Vec<Activity>, String> {
   use rusqlite::Connection;
   let db = Connection::open(app.path().app_data_dir().map_err(|e| e.to_string())?.join("timepulse.sqlite")).map_err(|e| e.to_string())?;
@@ -69,7 +80,7 @@ pub fn run() {
       tauri_plugin_autostart::MacosLauncher::LaunchAgent,
       Some(vec!["--minimized"]),
     ))
-    .invoke_handler(tauri::generate_handler![save_activity, list_activities, productivity_totals, export_activities])
+    .invoke_handler(tauri::generate_handler![save_activity, list_activities, productivity_totals, productivity_totals_for_period, export_activities])
     .setup(|app| {
       use rusqlite::Connection;
       use std::fs;
