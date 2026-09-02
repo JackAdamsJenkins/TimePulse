@@ -16,6 +16,24 @@ struct ProductivityTotal {
 }
 
 #[tauri::command]
+fn show_reminder(app: tauri::AppHandle, sound_enabled: bool) -> Result<(), String> {
+  if let Some(window) = app.get_webview_window("activity") {
+    window.show().map_err(|e| e.to_string())?;
+    window.set_always_on_top(true).map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())?;
+  }
+  #[cfg(windows)]
+  if sound_enabled { unsafe { let sound: Vec<u16> = "SystemExclamation".encode_utf16().chain(std::iter::once(0)).collect(); windows_sys::Win32::Media::Audio::PlaySoundW(sound.as_ptr(), std::ptr::null_mut(), 0x0002); } }
+  Ok(())
+}
+
+#[tauri::command]
+fn hide_reminder(app: tauri::AppHandle) -> Result<(), String> {
+  if let Some(window) = app.get_webview_window("activity") { window.hide().map_err(|e| e.to_string())?; }
+  Ok(())
+}
+
+#[tauri::command]
 fn productivity_totals(app: tauri::AppHandle) -> Result<Vec<ProductivityTotal>, String> {
   use rusqlite::Connection;
   let db = Connection::open(app.path().app_data_dir().map_err(|e| e.to_string())?.join("timepulse.sqlite")).map_err(|e| e.to_string())?;
@@ -80,7 +98,7 @@ pub fn run() {
       tauri_plugin_autostart::MacosLauncher::LaunchAgent,
       Some(vec!["--minimized"]),
     ))
-    .invoke_handler(tauri::generate_handler![save_activity, list_activities, productivity_totals, productivity_totals_for_period, export_activities])
+    .invoke_handler(tauri::generate_handler![save_activity, list_activities, productivity_totals, productivity_totals_for_period, export_activities, show_reminder, hide_reminder])
     .setup(|app| {
       use rusqlite::Connection;
       use std::fs;

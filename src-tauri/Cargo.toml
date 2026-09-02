@@ -26,3 +26,4 @@ tauri-plugin-log = "2"
 rusqlite = { version = "0.32", features = ["bundled"] }
 chrono = { version = "0.4", features = ["clock"] }
 tauri-plugin-autostart = "2"
+windows-sys = { version = "0.59", features = ["Win32_Media_Audio"] }
