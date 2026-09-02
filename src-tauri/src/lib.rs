@@ -9,6 +9,21 @@ struct Activity {
   productivity: String,
 }
 
+#[derive(serde::Serialize)]
+struct ProductivityTotal {
+  productivity: String,
+  count: i64,
+}
+
+#[tauri::command]
+fn productivity_totals(app: tauri::AppHandle) -> Result<Vec<ProductivityTotal>, String> {
+  use rusqlite::Connection;
+  let db = Connection::open(app.path().app_data_dir().map_err(|e| e.to_string())?.join("timepulse.sqlite")).map_err(|e| e.to_string())?;
+  let mut query = db.prepare("SELECT productivity, COUNT(*) FROM activities GROUP BY productivity").map_err(|e| e.to_string())?;
+  let rows = query.query_map([], |row| Ok(ProductivityTotal { productivity: row.get(0)?, count: row.get(1)? })).map_err(|e| e.to_string())?;
+  rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn list_activities(app: tauri::AppHandle) -> Result<Vec<Activity>, String> {
   use rusqlite::Connection;
@@ -54,7 +69,7 @@ pub fn run() {
       tauri_plugin_autostart::MacosLauncher::LaunchAgent,
       Some(vec!["--minimized"]),
     ))
-    .invoke_handler(tauri::generate_handler![save_activity, list_activities, export_activities])
+    .invoke_handler(tauri::generate_handler![save_activity, list_activities, productivity_totals, export_activities])
     .setup(|app| {
       use rusqlite::Connection;
       use std::fs;
